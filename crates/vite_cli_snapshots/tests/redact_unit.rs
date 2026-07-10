@@ -9,7 +9,19 @@
 #[path = "cli_snapshots/redact.rs"]
 mod redact;
 
-use redact::redact_output;
+use redact::{redact_output, redact_version_probe_output};
+
+#[test]
+fn masks_bare_version_block_only_for_version_probe_steps() {
+    // `npm --version` / `npx --version` print a bare semver alone in the
+    // step's code fence; the runner masks it via the probe-scoped helper.
+    let probe = "```\n10.9.4\n```\n".to_owned();
+    assert_eq!(redact_version_probe_output(probe), "```\n<version>\n```\n");
+    // The generic pass leaves the same shape verbatim: a printed
+    // `.node-version` file is a fixture-controlled assertion.
+    let node_version_file = "```\n25.8.2\n```\n".to_owned();
+    assert_eq!(redact_output(node_version_file.clone(), &[], true), node_version_file);
+}
 
 #[test]
 fn trims_trailing_row_padding_on_every_platform() {
